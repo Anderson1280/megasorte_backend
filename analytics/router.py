@@ -1,34 +1,14 @@
-from jose import jwt, JWTError
-from datetime import datetime, timedelta
-from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
-from db import get_db
-import os
+from fastapi import APIRouter
+from analytics.generator import generate_balanced_game
 
-# Pega das variáveis de ambiente do Render ou usa padrão
-SECRET_KEY = os.getenv("JWT_SECRET", "suachaveultrasecreta123")
-ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", 60))
+router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-def criar_token(user_id: int):
-    payload = {
-        "user_id": user_id,
-        "exp": datetime.utcnow() + timedelta(minutes=EXPIRE_MINUTES)
-    }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Token inválido")
-        return user_id
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Token inválido ou expirado")
-
-# APELIDO para resolver o erro de importação no módulo plays
-verificar_token = get_current_user
+@router.get("/generate")
+def get_game(region: str = None):
+    # Simulação de sorteios históricos para o gerador
+    mock_history = [
+        [1, 10, 20, 30, 40, 50],
+        [5, 15, 25, 35, 45, 55]
+    ]
+    jogo = generate_balanced_game(mock_history, region=region)
+    return jogo
