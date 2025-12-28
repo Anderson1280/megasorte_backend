@@ -1,6 +1,6 @@
 ### INÍCIO - backend/admin.py
 from fastapi import APIRouter
-from .db import get_db
+from db import get_db # Correto para o Render
 
 router = APIRouter()
 
