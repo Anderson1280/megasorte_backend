@@ -13,7 +13,6 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Função que os outros arquivos vão usar para acessar o banco
 def get_db():
     db = SessionLocal()
     try:
