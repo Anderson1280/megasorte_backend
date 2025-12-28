@@ -1,7 +1,7 @@
 ### INÍCIO - backend/webhook.py
 from fastapi import APIRouter, Request, HTTPException
 from datetime import datetime
-from .db import get_db
+from db import get_db
 import os
 
 router = APIRouter()
