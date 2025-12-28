@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from db import get_db  # Removido o ponto antes de db
 
 router = APIRouter()
 
