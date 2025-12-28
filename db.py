@@ -1,22 +1,22 @@
-from fastapi import APIRouter
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import os
 
-router = APIRouter()
+# Pega a URL do banco do Render ou usa um SQLite local
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./megasorte.db")
 
-@router.get("/vendas")
-def listar_vendas():
-    conn = get_db()
-    # Se o seu get_db retornar uma conexão direta:
-    cur = conn.cursor()
-    cur.execute("SELECT id, email, produto, transaction_id, status, data FROM vendas ORDER BY id DESC")
-    rows = cur.fetchall()
-    conn.close()
-    return {"vendas": [dict(r) for r in rows]}
+engine = create_engine(
+    DATABASE_URL, 
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
-@router.get("/acessos")
-def listar_acessos():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT id, email, credits, livro_liberado, premium FROM acessos ORDER BY id DESC")
-    rows = cur.fetchall()
-    conn.close()
-    return {"acessos": [dict(r) for r in rows]}
+# Função que os outros arquivos vão usar para acessar o banco
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
