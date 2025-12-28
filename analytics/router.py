@@ -1,47 +1,34 @@
-# analytics/generator.py
-import random
-from typing import List
-from analytics.frequency import frequency_analysis
-from analytics.patterns import analyze_patterns
-from analytics.region_map import region_weight
+from jose import jwt, JWTError
+from datetime import datetime, timedelta
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+from db import get_db
+import os
 
-NUMBERS = list(range(1, 61))
+# Pega das variáveis de ambiente do Render ou usa padrão
+SECRET_KEY = os.getenv("JWT_SECRET", "suachaveultrasecreta123")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", 60))
 
-def generate_balanced_game(
-    historical_draws: List[List[int]],
-    region: str | None = None
-) -> dict:
-    """
-    Gera um jogo balanceado com base em estatística.
-    Não realiza previsão.
-    """
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-    freq = frequency_analysis(historical_draws)
-
-    weights = []
-    for n in NUMBERS:
-        base_weight = freq.get(n, 1)
-        if region:
-            base_weight *= region_weight(region)
-        weights.append(base_weight)
-
-    for _ in range(100):
-        game = sorted(set(random.choices(NUMBERS, weights=weights, k=6)))
-        if len(game) != 6:
-            continue
-
-        patterns = analyze_patterns(game)
-
-        # Regras estatísticas simples e seguras
-        if 2 <= patterns["pares"] <= 4 and 120 <= patterns["soma_total"] <= 210:
-            return {
-                "numeros": game,
-                "analise": patterns
-            }
-
-    # fallback seguro
-    game = sorted(random.sample(NUMBERS, 6))
-    return {
-        "numeros": game,
-        "analise": analyze_patterns(game)
+def criar_token(user_id: int):
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.utcnow() + timedelta(minutes=EXPIRE_MINUTES)
     }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Token inválido")
+        return user_id
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token inválido ou expirado")
+
+# APELIDO para resolver o erro de importação no módulo plays
+verificar_token = get_current_user
